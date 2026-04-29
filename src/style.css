@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 自定义全局样式 */
+:root {
+  --primary-color: #FFD200;
+  --secondary-color: #00B4D8;
+  --background-color: #F8F9FA;
+  --text-primary: #212529;
+  --text-secondary: #495057;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* 按钮过渡效果 */
+.btn-transition {
+  @apply transition-all duration-150 ease-in-out;
+}
+
+.btn-hover {
+  @apply hover:-translate-y-0.5 hover:shadow-button-hover;
+}
+
+/* 卡片过渡效果 */
+.card-transition {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.card-hover {
+  @apply hover:-translate-y-1 hover:shadow-card-hover;
+}
+
+/* 页面切换动画 */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

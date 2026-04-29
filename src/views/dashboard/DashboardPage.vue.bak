@@ -1,0 +1,406 @@
+<template>
+  <DefaultLayout>
+    <div class="max-w-7xl mx-auto">
+      <!-- 页面标题 -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-text-primary">控制台</h1>
+        <p class="text-text-secondary mt-2">欢迎回来，{{ user?.name }}！</p>
+      </div>
+      
+      <!-- 概览卡片 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-card p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-text-secondary text-sm mb-1">当前套餐</p>
+              <p class="text-2xl font-bold text-text-primary">{{ currentPlan || '未订阅' }}</p>
+            </div>
+            <el-icon :size="32" class="text-primary"><tickets /></el-icon>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-card p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-text-secondary text-sm mb-1">到期天数</p>
+              <p class="text-2xl font-bold text-text-primary">{{ daysRemaining || 0 }}天</p>
+            </div>
+            <el-icon :size="32" class="text-secondary"><timer /></el-icon>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-card p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-text-secondary text-sm mb-1">本月在线</p>
+              <p class="text-2xl font-bold text-text-primary">24天</p>
+            </div>
+            <el-icon :size="32" class="text-green-500"><data-line /></el-icon>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-card p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-text-secondary text-sm mb-1">剩余图片额度</p>
+              <p class="text-2xl font-bold text-text-primary">{{ imageQuota }}张</p>
+            </div>
+            <el-icon :size="32" class="text-purple-500"><picture /></el-icon>
+          </div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- 左侧：套餐详情 -->
+        <div class="lg:col-span-2">
+          <!-- 套餐详情 -->
+          <div class="bg-white rounded-xl shadow-card p-6 mb-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-semibold text-text-primary">套餐详情</h2>
+              <router-link 
+                to="/pricing" 
+                class="text-secondary hover:text-secondary-dark text-sm font-medium"
+              >
+                查看套餐对比
+              </router-link>
+            </div>
+            
+            <div v-if="subscription" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-text-secondary text-sm">套餐名称</p>
+                  <p class="font-medium">{{ subscription.plan_name }}</p>
+                </div>
+                <div>
+                  <p class="text-text-secondary text-sm">状态</p>
+                  <p class="font-medium">
+                    <span :class="subscription.status === 'active' ? 'text-green-600' : 'text-red-600'">
+                      {{ subscription.status === 'active' ? '生效中' : '已过期' }}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <p class="text-text-secondary text-sm">开通日期</p>
+                  <p class="font-medium">{{ formatDate(subscription.start_date) }}</p>
+                </div>
+                <div>
+                  <p class="text-text-secondary text-sm">到期日期</p>
+                  <p class="font-medium">{{ formatDate(subscription.end_date) }}</p>
+                </div>
+              </div>
+              
+              <div class="pt-6 border-t border-gray-100">
+                <h3 class="font-medium text-text-primary mb-4">套餐功能</h3>
+                <ul class="space-y-3">
+                  <li v-for="(feature, index) in planFeatures" :key="index" class="flex items-center">
+                    <el-icon class="text-green-500 mr-3"><check /></el-icon>
+                    <span class="text-text-secondary">{{ feature }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            
+            <div v-else class="text-center py-8">
+              <el-icon :size="48" class="text-gray-300 mb-4"><tickets /></el-icon>
+              <p class="text-text-secondary mb-4">你还没有激活任何套餐</p>
+              <router-link 
+                to="/pricing" 
+                class="text-secondary hover:text-secondary-dark font-medium"
+              >
+                去选择套餐 →
+              </router-link>
+            </div>
+          </div>
+          
+          <!-- 执行日志 -->
+          <div class="bg-white rounded-xl shadow-card p-6">
+            <h2 class="text-xl font-semibold text-text-primary mb-6">执行日志</h2>
+            
+            <div v-if="executionLogs.length > 0" class="space-y-4">
+              <div 
+                v-for="log in executionLogs" 
+                :key="log.id"
+                class="border-l-4 border-primary pl-4 py-2"
+              >
+                <div class="flex justify-between items-start">
+                  <p class="font-medium">{{ log.action }}</p>
+                  <span class="text-text-secondary text-sm">{{ formatTime(log.time) }}</span>
+                </div>
+                <p class="text-text-secondary text-sm mt-1">{{ log.details }}</p>
+              </div>
+            </div>
+            
+            <div v-else class="text-center py-8">
+              <el-icon :size="48" class="text-gray-300 mb-4"><list /></el-icon>
+              <p class="text-text-secondary">暂无执行记录</p>
+              <p class="text-text-secondary text-sm mt-2">启动机器人后，执行记录会显示在这里</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 右侧：快速操作 -->
+        <div>
+          <!-- 快速操作 -->
+          <div class="bg-white rounded-xl shadow-card p-6 mb-8">
+            <h2 class="text-xl font-semibold text-text-primary mb-6">快速操作</h2>
+            <div class="space-y-4">
+              <router-link 
+                to="/redeem"
+                class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary-light transition-colors"
+              >
+                <div class="flex items-center">
+                  <el-icon class="text-primary mr-3"><discount /></el-icon>
+                  <span class="font-medium">激活兑换码</span>
+                </div>
+                <el-icon><arrow-right /></el-icon>
+              </router-link>
+              
+              <button 
+                class="flex items-center justify-between w-full p-4 border border-gray-200 rounded-lg hover:border-secondary hover:bg-secondary-light transition-colors text-left"
+                @click="showBotManagement"
+              >
+                <div class="flex items-center">
+                  <el-icon class="text-secondary mr-3"><robot /></el-icon>
+                  <span class="font-medium">机器人管理</span>
+                </div>
+                <el-icon><arrow-right /></el-icon>
+              </button>
+              
+              <router-link 
+                to="/feedback"
+                class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors"
+              >
+                <div class="flex items-center">
+                  <el-icon class="text-green-500 mr-3"><chat-line-round /></el-icon>
+                  <span class="font-medium">意见反馈</span>
+                </div>
+                <el-icon><arrow-right /></el-icon>
+              </router-link>
+              
+              <button 
+                class="flex items-center justify-between w-full p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors text-left"
+                @click="showAccountSettings"
+              >
+                <div class="flex items-center">
+                  <el-icon class="text-purple-500 mr-3"><setting /></el-icon>
+                  <span class="font-medium">账户设置</span>
+                </div>
+                <el-icon><arrow-right /></el-icon>
+              </button>
+            </div>
+          </div>
+          
+          <!-- 机器人状态 -->
+          <div class="bg-white rounded-xl shadow-card p-6">
+            <h2 class="text-xl font-semibold text-text-primary mb-6">机器人状态</h2>
+            
+            <div v-if="bots.length > 0" class="space-y-4">
+              <div 
+                v-for="bot in bots" 
+                :key="bot.id"
+                class="border border-gray-200 rounded-lg p-4"
+              >
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center">
+                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                      <span class="text-lg">{{ bot.platform.charAt(0) }}</span>
+                    </div>
+                    <div>
+                      <p class="font-medium">{{ bot.platform }}</p>
+                      <p class="text-text-secondary text-xs">{{ bot.account }}</p>
+                    </div>
+                  </div>
+                  <span :class="bot.status === 'running' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'" 
+                        class="px-2 py-1 rounded text-xs">
+                    {{ bot.status === 'running' ? '运行中' : '已停止' }}
+                  </span>
+                </div>
+                <div class="text-text-secondary text-xs">
+                  <p>最后运行：{{ bot.lastRun }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div v-else class="text-center py-6">
+              <el-icon :size="48" class="text-gray-300 mb-4"><robot /></el-icon>
+              <p class="text-text-secondary mb-4">暂无机器人</p>
+              <button 
+                class="text-secondary hover:text-secondary-dark font-medium text-sm"
+                @click="showBotManagement"
+              >
+                + 添加机器人
+              </button>
+            </div>
+            
+            <div class="mt-6 pt-6 border-t border-gray-100">
+              <router-link 
+                to="#"
+                class="text-secondary hover:text-secondary-dark text-sm font-medium flex items-center"
+              >
+                <el-icon class="mr-2"><help /></el-icon>
+                配置教程
+              </router-link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </DefaultLayout>
+</template>
+
+<script setup>
+  Tickets, Timer, DataLine, Picture, Check, List,
+  ArrowRight, Discount, Cpu, ChatLineRound, Setting,
+  Help
+} from '@element-plus/icons-vue'
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
+
+const authStore = useAuthStore()
+
+// 响应式数据
+const subscription = ref(null)
+const executionLogs = ref([])
+const bots = ref([])
+const isLoading = ref(false)
+
+// 计算属性
+const user = computed(() => authStore.user)
+const currentPlan = computed(() => {
+  if (!subscription.value) return null
+  return subscription.value.plan_name || subscription.value.plan_type
+})
+const daysRemaining = computed(() => {
+  return subscription.value?.days_remaining || 0
+})
+const imageQuota = computed(() => {
+  const plan = subscription.value?.plan_type
+  if (plan === 'basic') return 10
+  if (plan === 'premium') return 20
+  return 0
+})
+
+const planFeatures = computed(() => {
+  const plan = subscription.value?.plan_type
+  if (plan === 'basic') {
+    return [
+      '基础智能客服',
+      '商品管理（单店）',
+      '数据监控',
+      'AI内容生成（50次/月）',
+      '即梦AI图片（10张/月）'
+    ]
+  }
+  if (plan === 'premium') {
+    return [
+      '高级智能客服',
+      '商品管理（多店）',
+      '深度数据雷达',
+      '评价自动维护',
+      'AI内容生成（无限次）',
+      '即梦AI图片（20张/月）',
+      '专属客服支持'
+    ]
+  }
+  return []
+})
+
+// 初始化数据
+const loadData = async () => {
+  isLoading.value = true
+  try {
+    // 加载订阅信息
+    const subscriptionResult = await getSubscriptions()
+    if (!subscriptionResult.error && subscriptionResult.active_subscription) {
+      subscription.value = subscriptionResult.active_subscription
+    }
+    
+    // 加载执行日志（模拟数据）
+    executionLogs.value = [
+      {
+        id: 1,
+        action: '商品自动上架',
+        details: '成功上架5个商品到闲鱼平台',
+        time: new Date(Date.now() - 3600000).toISOString() // 1小时前
+      },
+      {
+        id: 2,
+        action: '智能客服回复',
+        details: '自动回复了23条客户咨询',
+        time: new Date(Date.now() - 86400000).toISOString() // 1天前
+      },
+      {
+        id: 3,
+        action: '数据监控',
+        details: '监控到3个竞品价格变动',
+        time: new Date(Date.now() - 172800000).toISOString() // 2天前
+      }
+    ]
+    
+    // 加载机器人状态（模拟数据）
+    bots.value = [
+      {
+        id: 1,
+        platform: '闲鱼',
+        account: '账号1',
+        status: 'running',
+        lastRun: '2小时前'
+      },
+      {
+        id: 2,
+        platform: '抖音小店',
+        account: '账号2',
+        status: 'stopped',
+        lastRun: '1天前'
+      }
+    ]
+    
+  } catch (error) {
+    console.error('加载控制台数据错误:', error)
+    ElMessage.error('加载数据失败')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 格式化日期
+const formatDate = (dateString) => {
+  if (!dateString) return '未知'
+  const date = new Date(dateString)
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
+// 格式化时间
+const formatTime = (timeString) => {
+  if (!timeString) return '未知'
+  const time = new Date(timeString)
+  const now = new Date()
+  const diff = now.getTime() - time.getTime()
+  
+  if (diff < 60000) return '刚刚'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
+  return `${Math.floor(diff / 86400000)}天前`
+}
+
+// 显示机器人管理
+const showBotManagement = () => {
+  ElMessage.info('机器人管理功能开发中...')
+}
+
+// 显示账户设置
+const showAccountSettings = () => {
+  ElMessage.info('账户设置功能开发中...')
+}
+
+onMounted(() => {
+  loadData()
+})
+</script>
+
+<style scoped>
+/* 控制台样式 */
+</style>
